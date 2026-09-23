@@ -31,6 +31,7 @@ import {
   ensureFontsLoaded,
 } from '../render/badge-canvas.js';
 import { rotationLabels, renderedSize } from '../pure/panel-orientation.js';
+import { hasOwnContent, withPreviewExample } from '../pure/preview-example.js';
 import { antennaEdge } from '../pure/nfc-placement.js';
 import { isWebBluetoothSupported, createBleClient, connectAndAuthenticate, disconnectBleClient, sendBadgeToDisplay, parseKeyHex } from '../ble/ble-client.js';
 import { writeVCardOverBle } from '../ble/nfc-write.js';
@@ -109,6 +110,7 @@ for (const id of [
   'btn-device-delete',
   'field-device-name',
   'btn-device-save',
+  'preview-example-note',
   'status-line',
 ]) {
   el[id] = document.getElementById(id);
@@ -278,11 +280,13 @@ async function rerender() {
     const render = portrait ? renderBadgePortrait : renderBadge;
     const { width, height } = renderedSize(orientation);
     const markEdge = antennaEdge(orientation, prefs.rotation, width, height);
+    const { content, usingExample } = withPreviewExample(currentBadgeContent());
     lastLayout = await render(el['badge-canvas'], {
-      content: currentBadgeContent(),
+      content,
       logoUrl: currentLogoUrl(),
       markEdge,
     });
+    el['preview-example-note'].hidden = !usingExample;
     el['badge-canvas'].dataset.scale = String(prefs.previewScale);
     // The canvas keeps its own aspect via CSS; tell it which one to use.
     el['badge-canvas'].classList.toggle('portrait', portrait);
@@ -459,6 +463,12 @@ el['btn-send'].addEventListener('click', async () => {
     setStatus('Connect to a device first.');
     return;
   }
+  // The preview fills empty fields with examples. Sending them to a real tag
+  // would put "@yourhandle" on someone's badge.
+  if (!hasOwnContent(currentBadgeContent())) {
+    setStatus('Fill in your details first: the preview is only showing an example.');
+    return;
+  }
   el['btn-send'].disabled = true;
   setProgress(true, 0);
   setStatus('Rendering badge...');
@@ -524,6 +534,10 @@ el['btn-nfc'].addEventListener('click', async () => {
 });
 
 el['btn-download'].addEventListener('click', async () => {
+  if (!hasOwnContent(currentBadgeContent())) {
+    setStatus('Fill in your details first: the preview is only showing an example.');
+    return;
+  }
   await rerender();
   const canvas = /** @type {HTMLCanvasElement} */ (el['badge-canvas']);
   canvas.toBlob((blob) => {
