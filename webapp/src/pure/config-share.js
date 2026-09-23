@@ -15,7 +15,13 @@
 /** Bumped when the shape changes in a way older readers cannot handle. */
 export const CONFIG_VERSION = 1;
 
-/** Fields that describe the badge itself. */
+/**
+ * Fields that describe the badge itself.
+ *
+ * previewScale is deliberately absent: it is how big the preview is drawn on
+ * this screen, not part of the design, so it should not travel in a link or
+ * be restored by loading a saved design.
+ */
 export const DESIGN_KEYS = Object.freeze([
   'project',
   'customWordmark',
@@ -26,7 +32,6 @@ export const DESIGN_KEYS = Object.freeze([
   'qrUrl',
   'orientation',
   'rotation',
-  'previewScale',
   'compensateRedYellow',
 ]);
 

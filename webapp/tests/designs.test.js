@@ -148,3 +148,8 @@ test('storage that throws on write reports failure instead of pretending', () =>
   assert.equal(result.ok, false);
   assert.match(result.error, /refused to store/);
 });
+
+test('a saved design does not capture the preview scale', () => {
+  const values = designValuesFromPrefs({ ...PREFS, previewScale: 1 });
+  assert.equal(values.previewScale, undefined);
+});

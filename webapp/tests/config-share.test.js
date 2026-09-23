@@ -155,3 +155,15 @@ function encodeConfigRaw(text) {
   for (const byte of bytes) binary += String.fromCharCode(byte);
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
+
+test('previewScale is a local viewing preference, not part of a config', () => {
+  // How big the preview is drawn on this screen should not follow a link
+  // around or come back when a saved design is loaded.
+  for (const options of [{}, { forShare: true }, { includeContact: true, includeDevice: true }]) {
+    const config = buildConfig(PREFS, options);
+    assert.equal(config.design.previewScale, undefined);
+    assert.equal(JSON.stringify(config).includes('previewScale'), false);
+  }
+  const { prefs } = configToPrefs({ v: CONFIG_VERSION, design: { previewScale: 1 } });
+  assert.equal(prefs.previewScale, undefined);
+});
