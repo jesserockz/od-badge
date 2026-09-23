@@ -6,8 +6,9 @@
 //   design   the badge itself. Always included, never sensitive.
 //   contact  the name and email on the NFC vCard. Personal, so including it
 //            in a share link is asked about each time rather than assumed.
-//   device   the tag's name prefix and encryption key. NEVER in a share
-//            string, only in a file the user downloads deliberately.
+//   device   the tag's name prefix and encryption key, plus the saved-device
+//            library. NEVER in a share string, only in a file the user
+//            downloads deliberately.
 //
 // Share strings go in the URL fragment rather than a query parameter, so the
 // config is never sent to a web server or written to its logs.

@@ -17,6 +17,14 @@ import {
 } from '../pure/config-share.js';
 import { deleteDesign, findDesign, loadDesigns, saveDesign } from '../pure/designs.js';
 import {
+  deleteDevice,
+  findDevice,
+  isValidKeyHex,
+  loadDevices,
+  mergeDevices,
+  saveDevice,
+} from '../pure/devices.js';
+import {
   renderBadge,
   renderBadgePortrait,
   prepareForPanel,
@@ -96,6 +104,11 @@ for (const id of [
   'btn-design-save',
   'btn-design-load',
   'btn-design-delete',
+  'field-device-list',
+  'btn-device-load',
+  'btn-device-delete',
+  'field-device-name',
+  'btn-device-save',
   'status-line',
 ]) {
   el[id] = document.getElementById(id);
@@ -604,6 +617,11 @@ el['btn-export'].addEventListener('click', () => {
     { includeContact: true, includeDevice: true, includeKey: true },
     encryptionKeyHex,
   );
+  // The saved-device library travels with the file too, which is how a tag
+  // set moves to another browser or a phone. Never in a share link.
+  const devices = loadDevices(storage);
+  if (devices.length > 0) config.devices = devices;
+
   const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
@@ -611,8 +629,8 @@ el['btn-export'].addEventListener('click', () => {
   link.click();
   URL.revokeObjectURL(link.href);
   setStatus(
-    encryptionKeyHex
-      ? 'Downloaded od-badge-config.json. It contains your encryption key, keep it private.'
+    encryptionKeyHex || devices.length > 0
+      ? `Downloaded od-badge-config.json. It contains ${devices.length > 0 ? 'your saved device keys' : 'your encryption key'}, keep it private.`
       : 'Downloaded od-badge-config.json.',
   );
 });
@@ -631,7 +649,12 @@ el['field-import-file'].addEventListener('change', async () => {
       el['field-key'].value = key;
       if (prefs.rememberKey) saveStoredKey(storage, key);
     }
-    setStatus(`Loaded ${file.name}${key ? ' (including the encryption key)' : ''}.`);
+    const merged = mergeDevices(storage, config.devices);
+    renderDeviceList(merged.devices);
+    const parts = [];
+    if (key) parts.push('the encryption key');
+    if (merged.added > 0) parts.push(`${merged.added} saved device${merged.added === 1 ? '' : 's'}`);
+    setStatus(`Loaded ${file.name}${parts.length ? ` (including ${parts.join(' and ')})` : ''}.`);
   } catch (error) {
     setStatus(`Could not load that config: ${error.message}`);
   } finally {
@@ -731,3 +754,89 @@ applyShareLink(window.location.hash);
 // a same-document navigation: the page does not reload, so without this the
 // link would appear to do nothing.
 window.addEventListener('hashchange', () => applyShareLink(window.location.hash));
+
+
+// --- Saved devices ------------------------------------------------------------
+
+/**
+ * Repopulate the saved-devices dropdown.
+ *
+ * @param {import('../pure/devices.js').SavedDevice[]} devices
+ * @returns {void}
+ */
+function renderDeviceList(devices) {
+  const select = el['field-device-list'];
+  const previous = select.value;
+  select.innerHTML = '';
+  if (devices.length === 0) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = '(none saved yet)';
+    select.appendChild(option);
+    select.disabled = true;
+    el['btn-device-load'].disabled = true;
+    el['btn-device-delete'].disabled = true;
+    return;
+  }
+  select.disabled = false;
+  el['btn-device-load'].disabled = false;
+  el['btn-device-delete'].disabled = false;
+  for (const device of devices) {
+    const option = document.createElement('option');
+    option.value = device.name;
+    option.textContent = device.prefix ? `${device.name} (${device.prefix})` : device.name;
+    select.appendChild(option);
+  }
+  if (devices.some((device) => device.name === previous)) select.value = previous;
+}
+
+el['btn-device-save'].addEventListener('click', () => {
+  const result = saveDevice(
+    storage,
+    el['field-device-name'].value,
+    el['field-device-prefix'].value,
+    encryptionKeyHex,
+  );
+  renderDeviceList(result.devices);
+  if (!result.ok) {
+    setStatus(result.error);
+    return;
+  }
+  el['field-device-list'].value = el['field-device-name'].value.trim();
+  setStatus(`Saved device "${el['field-device-name'].value.trim()}".`);
+});
+
+el['btn-device-load'].addEventListener('click', () => {
+  const name = el['field-device-list'].value;
+  const device = findDevice(storage, name);
+  if (!device) {
+    setStatus('That device is no longer saved.');
+    renderDeviceList(loadDevices(storage));
+    return;
+  }
+  prefs = { ...prefs, devicePrefix: device.prefix };
+  encryptionKeyHex = device.key;
+  el['field-device-prefix'].value = device.prefix;
+  el['field-key'].value = device.key;
+  el['field-device-name'].value = device.name;
+  if (prefs.rememberKey) saveStoredKey(storage, device.key);
+  debouncedSave();
+  // Switching tags mid-session would leave a connection pointing at the old
+  // one, so make the user reconnect deliberately.
+  if (bleClient) {
+    const previous = bleClient;
+    handleDisconnected(`Using "${device.name}". Disconnected from the previous tag, connect again.`);
+    disconnectBleClient(previous);
+    return;
+  }
+  setStatus(`Using device "${device.name}".`);
+});
+
+el['btn-device-delete'].addEventListener('click', () => {
+  const name = el['field-device-list'].value;
+  if (!name) return;
+  renderDeviceList(deleteDevice(storage, name));
+  setStatus(`Deleted device "${name}".`);
+});
+
+renderDeviceList(loadDevices(storage));

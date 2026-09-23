@@ -141,6 +141,25 @@
         Stored in this browser's local storage in plain text, readable by anything with script access to this
         page's origin.
       </p>
+
+      <label for="field-device-list">Saved devices</label>
+      <select id="field-device-list"></select>
+      <div class="actions actions-inline">
+        <button id="btn-device-load" type="button">Use</button>
+        <button id="btn-device-delete" type="button">Delete</button>
+      </div>
+
+      <label for="field-device-name">Save current device as</label>
+      <div class="input-with-action">
+        <input id="field-device-name" type="text" maxlength="60" placeholder="e.g. Lanyard tag" />
+      </div>
+      <div class="actions actions-inline">
+        <button id="btn-device-save" type="button">Save device</button>
+      </div>
+      <p class="warning-text">
+        Saved devices keep their encryption key in this browser's local storage
+        in plain text, readable by anything with script access to this page.
+      </p>
     </fieldset>
   </form>
 
