@@ -7,9 +7,12 @@ copied verbatim and unmodified.
 | ----------------- | ----------------------------- | -------------- |
 | `js/pako.js`      | pako 2.1.0                    | MIT AND Zlib   |
 | `l/qrcode.js`     | qrcodejs (davidshimjs)        | MIT            |
+| `js/jsQR.js`      | jsQR 1.4.0 (cozmo)            | Apache-2.0     |
 
-Both are vendored rather than linked so the badge preview and the PNG
-download keep working with no network.
+pako and qrcodejs are vendored rather than linked so the badge preview and
+the PNG download keep working with no network. jsQR decodes the device QR
+code in browsers without a native `BarcodeDetector` (desktop Chrome on
+Windows and Linux); it is loaded on first scan, not with the page.
 
 ## Not vendored: ble-common.js
 

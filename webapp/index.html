@@ -129,6 +129,13 @@
         </button>
       </div>
 
+      <div class="actions actions-inline">
+        <button id="btn-scan-device" type="button">Scan device QR code</button>
+      </div>
+      <p class="dialog-note">
+        Fills in the name and key from the QR code the tag shows when it starts.
+      </p>
+
       <label class="checkbox-row">
         <input id="field-remember-key" type="checkbox" />
         Remember key on this device
@@ -183,6 +190,22 @@
         <div class="actions">
           <button id="btn-share-copy" type="button">Copy link</button>
           <button value="close">Close</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="scan-dialog">
+      <form method="dialog" id="scan-form">
+        <h2>Scan device QR code</h2>
+        <p class="dialog-note">
+          Point the camera at the QR code on the tag's start-up screen.
+        </p>
+        <video id="scan-video" playsinline muted></video>
+        <p id="scan-status" class="dialog-note" role="status"></p>
+        <input id="field-scan-image" type="file" accept="image/*" hidden />
+        <div class="actions">
+          <button id="btn-scan-image" type="button">Use a photo instead</button>
+          <button value="close">Cancel</button>
         </div>
       </form>
     </dialog>

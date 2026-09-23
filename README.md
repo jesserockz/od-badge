@@ -46,7 +46,7 @@ or `--device` / `--key`.
 
 ```bash
 uv run pytest --cov=od_badge --cov-report=term-missing   # 97 tests, 100%
-cd webapp && node --test                                  # 114 tests
+cd webapp && node --test                                  # 177 tests
 ```
 
 ## Things worth knowing
@@ -71,6 +71,13 @@ edge), so it lands on a different edge of the badge depending on rotation. The
 tap mark follows it. The edge is derived from the rotation transform rather
 than tabulated, and a test reproduces the mapping.
 
+**The tag's start-up QR code carries its name and key.** The webapp's "Scan
+device QR code" button reads it with the camera (or from a photo, or a pasted
+`https://opendisplay.org/l/?...` link) and fills in the device name prefix and
+encryption key. The link's query is an unpadded base64url 23-byte payload:
+tag type (2), device id (3, the `OD######` name), AES key (16), manufacturer
+(2). The key is all zeros unless the tag's "show key on screen" flag is set.
+
 **`ble-common.js` is linked, not vendored.** See `webapp/vendor/README.md`.
 
 ## Licence
@@ -78,6 +85,6 @@ than tabulated, and a test reproduces the mapping.
 Apache License 2.0, see `LICENSE`.
 
 The third-party libraries under `webapp/vendor/` keep their own licences (pako
-is MIT AND Zlib, qrcodejs is MIT). `ble-common.js` is not redistributed here at
-all: it is loaded from opendisplay.org, which declares no licence. See
-`webapp/vendor/README.md`.
+is MIT AND Zlib, qrcodejs is MIT, jsQR is Apache 2.0). `ble-common.js` is not
+redistributed here at all: it is loaded from opendisplay.org, which declares no
+licence. See `webapp/vendor/README.md`.
