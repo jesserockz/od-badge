@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>OpenDisplay Badge Designer</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header class="app-header">
+  <h1>OpenDisplay Badge Designer</h1>
+  <p class="app-subtitle">Design a name badge for the OpenDisplay BWRY e-paper tag, then send it over Bluetooth.</p>
+</header>
+
+<div id="bluetooth-unsupported" class="banner banner-warning" hidden>
+  Web Bluetooth is not available in this browser, so Connect, Send to display and Write NFC contact are disabled.
+  Try a recent Chrome or Edge on desktop or Android (on iPhone/iPad, try the Bluefy app). You can still design the
+  badge and download it as a PNG.
+</div>
+
+<main class="layout">
+  <form id="badge-form" class="panel">
+    <fieldset>
+      <legend>Brand</legend>
+      <label for="field-project">Project</label>
+      <select id="field-project" name="project">
+        <option value="esphome">ESPHome</option>
+        <option value="home-assistant">Home Assistant</option>
+        <option value="music-assistant">Music Assistant</option>
+        <option value="open-home-foundation">Open Home Foundation</option>
+        <option value="custom">Custom</option>
+      </select>
+
+      <div id="custom-fields" class="custom-fields" hidden>
+        <label for="field-custom-wordmark">Custom wordmark</label>
+        <input id="field-custom-wordmark" type="text" maxlength="24" placeholder="MY PROJECT" />
+
+        <label for="field-custom-domain">Custom domain</label>
+        <input id="field-custom-domain" type="text" maxlength="32" placeholder="example.com" />
+
+        <label for="field-custom-logo">Custom logo (PNG or SVG)</label>
+        <input id="field-custom-logo" type="file" accept="image/png,image/svg+xml" />
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Content</legend>
+      <label for="field-handle">Handle (hero text)</label>
+      <input id="field-handle" type="text" maxlength="40" />
+
+      <label for="field-name">Name</label>
+      <input id="field-name" type="text" maxlength="24" />
+      <label for="field-qrurl">QR code URL</label>
+      <input id="field-qrurl" type="text" maxlength="200" />
+    </fieldset>
+
+    <fieldset>
+      <legend>NFC contact card</legend>
+      <label for="field-contact-name">Contact name</label>
+      <input id="field-contact-name" type="text" maxlength="60" />
+
+      <label for="field-contact-email">Contact email</label>
+      <input id="field-contact-email" type="email" maxlength="80" />
+    </fieldset>
+
+    <fieldset>
+      <legend>Device</legend>
+      <label for="field-scale">Preview scale</label>
+      <select id="field-scale">
+        <option value="2">2x (default)</option>
+        <option value="1">1x (actual size)</option>
+      </select>
+
+      <label for="field-orientation">Orientation</label>
+      <select id="field-orientation">
+        <option value="landscape">Landscape 384x168 (default)</option>
+        <option value="portrait">Portrait 168x384 (panel native)</option>
+      </select>
+
+      <label for="field-rotation">Panel rotation</label>
+      <select id="field-rotation">
+        <option value="ccw">Counter-clockwise (default)</option>
+        <option value="cw">Clockwise</option>
+      </select>
+
+      <label class="checkbox-row">
+        <input id="field-compensate" type="checkbox" />
+        Compensate red/yellow (panel 0x1E)
+      </label>
+
+      <label for="field-device-prefix">Device name prefix</label>
+      <input id="field-device-prefix" type="text" maxlength="40" placeholder="(any OpenDisplay device)" />
+
+      <label for="field-key">Encryption key (32 hex characters)</label>
+      <div class="input-with-action">
+        <input id="field-key" type="password" maxlength="64" autocomplete="off" placeholder="00112233445566778899AABBCCDDEEFF" />
+        <button id="btn-toggle-key" type="button" class="input-action" aria-label="Show key" aria-pressed="false" title="Show key">
+          <svg class="icon-eye" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+            <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  d="M1.8 12S5.4 5 12 5s10.2 7 10.2 7-3.6 7-10.2 7S1.8 12 1.8 12z" />
+            <circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2" />
+          </svg>
+          <svg class="icon-eye-off" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+            <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                  d="M9.9 5.2A9.8 9.8 0 0 1 12 5c6.6 0 10.2 7 10.2 7a18 18 0 0 1-3.3 4.2M6.3 6.7A17.6 17.6 0 0 0 1.8 12S5.4 19 12 19a9.6 9.6 0 0 0 4-.86" />
+            <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                  d="M9.7 9.9a3.2 3.2 0 0 0 4.5 4.5" />
+            <path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M3 3l18 18" />
+          </svg>
+        </button>
+      </div>
+
+      <label class="checkbox-row">
+        <input id="field-remember-key" type="checkbox" />
+        Remember key on this device
+      </label>
+      <p id="remember-key-warning" class="warning-text">
+        Stored in this browser's local storage in plain text, readable by anything with script access to this
+        page's origin.
+      </p>
+    </fieldset>
+  </form>
+
+  <section class="panel preview">
+    <div class="canvas-frame">
+      <canvas id="badge-canvas" width="384" height="168"></canvas>
+    </div>
+
+    <div class="actions">
+      <button id="btn-connect" type="button">Connect</button>
+      <button id="btn-disconnect" type="button" hidden>Disconnect</button>
+      <button id="btn-send" type="button" disabled>Send to display</button>
+      <button id="btn-nfc" type="button" disabled>Write NFC contact</button>
+      <button id="btn-download" type="button">Download PNG</button>
+    </div>
+
+    <div id="progress-wrap" class="progress-wrap" hidden>
+      <progress id="progress-bar" max="100" value="0"></progress>
+    </div>
+    <p id="status-line" class="status-line" role="status"></p>
+  </section>
+</main>
+
+<!-- Vendored classic scripts (not ES modules): each declares a global the
+     module script below depends on (pako, QRCode, OpenDisplayBLE). Loaded
+     in this order, right before the module script, so those globals exist
+     before any module code runs. -->
+<!-- pako and qrcode are third-party MIT/Zlib libraries, vendored so the badge
+     preview and PNG download keep working offline. ble-common.js is
+     OpenDisplay's own code with no declared licence, so it is linked from
+     their site rather than redistributed here: only the device actions
+     (connect, send, NFC) need the network. -->
+<script src="vendor/js/pako.js"></script>
+<script src="vendor/l/qrcode.js"></script>
+<script src="https://opendisplay.org/js/ble-common.js"></script>
+<script type="module" src="src/ui/app.js"></script>
+</body>
+</html>

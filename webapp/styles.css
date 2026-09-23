@@ -1,0 +1,294 @@
+@font-face {
+  font-family: 'ODBadgePPB';
+  src: url('assets/fonts/ppb.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'ODBadgeRBM';
+  src: url('assets/fonts/rbm.ttf') format('truetype');
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light dark;
+  --bg: #f2f4f9;
+  --panel-bg: #ffffff;
+  --text: #1d2126;
+  --muted: #5a6470;
+  --border: #d7dbe3;
+  --accent: #18bcf2;
+  --warning-bg: #fff4e5;
+  --warning-text: #7a4a00;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171a;
+    --panel-bg: #1d2126;
+    --text: #f2f4f9;
+    --muted: #a3adba;
+    --border: #33393f;
+    --warning-bg: #3a2c00;
+    --warning-text: #ffcc80;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  padding: 24px;
+}
+
+.app-header h1 {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+.app-subtitle {
+  margin: 0 0 20px;
+  color: var(--muted);
+}
+
+.banner {
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.banner-warning {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+fieldset {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin: 0 0 16px;
+  padding: 12px;
+}
+
+fieldset:last-child {
+  margin-bottom: 0;
+}
+
+legend {
+  padding: 0 6px;
+  font-weight: 600;
+}
+
+label {
+  display: block;
+  margin: 10px 0 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text);
+}
+
+.checkbox-row input {
+  margin: 0;
+}
+
+input[type='text'],
+input[type='email'],
+input[type='password'],
+select {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--panel-bg);
+  color: var(--text);
+  font-size: 14px;
+}
+
+input[type='file'] {
+  width: 100%;
+  font-size: 13px;
+}
+
+.warning-text {
+  font-size: 12px;
+  color: var(--warning-text);
+  margin: 4px 0 0;
+}
+
+.custom-fields {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border);
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.canvas-frame {
+  background: #ffffff;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  /* The preview is only honest at a whole-number scale, so it is never shrunk
+     to fit. When it does not fit, this scrolls instead. */
+  overflow: auto;
+  max-width: 100%;
+}
+
+#badge-canvas {
+  /* Pixel-perfect only. The canvas is 384x168 (or 168x384 in portrait) and is
+     shown at exactly 1x or 2x, never a fractional factor: with
+     image-rendering: pixelated, a fractional scale renders some source pixels
+     one device pixel wide and others two, so the preview stops matching what
+     the panel will actually show. No max-width here on purpose; the frame
+     scrolls instead of shrinking the canvas to a fractional size. */
+  width: 768px;
+  height: 336px;
+  image-rendering: pixelated;
+  display: block;
+  flex: none;
+}
+
+#badge-canvas[data-scale='1'] {
+  width: 384px;
+  height: 168px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+}
+
+button {
+  padding: 10px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--accent);
+  background: var(--accent);
+  color: #051a22;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.progress-wrap {
+  width: 100%;
+  max-width: 400px;
+}
+
+progress {
+  width: 100%;
+}
+
+.status-line {
+  min-height: 1.2em;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+
+/* Portrait preview: the panel's native 168x384. Narrower, so cap the width
+   rather than letting it stretch to the landscape width. */
+#badge-canvas.portrait {
+  width: 336px;
+  height: 768px;
+}
+
+#badge-canvas.portrait[data-scale='1'] {
+  width: 168px;
+  height: 384px;
+}
+
+
+/* A text field with a button sitting inside its right edge (the key reveal
+   toggle). The input keeps room on the right so typed text never runs under
+   the button. */
+.input-with-action {
+  position: relative;
+  display: block;
+}
+
+.input-with-action input {
+  padding-right: 38px;
+}
+
+.input-action {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.input-action:hover {
+  color: var(--text);
+}
+
+.input-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Show one icon or the other, never both. */
+.input-action .icon-eye-off {
+  display: none;
+}
+
+.input-action[aria-pressed='true'] .icon-eye {
+  display: none;
+}
+
+.input-action[aria-pressed='true'] .icon-eye-off {
+  display: block;
+}
