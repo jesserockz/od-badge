@@ -46,7 +46,7 @@ or `--device` / `--key`.
 
 ```bash
 uv run pytest --cov=od_badge --cov-report=term-missing   # 97 tests, 100%
-cd webapp && node --test                                  # 177 tests
+cd webapp && node --test                                  # 183 tests
 ```
 
 ## Things worth knowing

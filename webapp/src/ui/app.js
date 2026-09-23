@@ -32,6 +32,7 @@ import {
 } from '../render/badge-canvas.js';
 import { rotationLabels, renderedSize } from '../pure/panel-orientation.js';
 import { hasOwnContent, withPreviewExample } from '../pure/preview-example.js';
+import { fitPreviewScale } from '../pure/preview-scale.js';
 import { antennaEdge } from '../pure/nfc-placement.js';
 import { isWebBluetoothSupported, createBleClient, connectAndAuthenticate, disconnectBleClient, sendBadgeToDisplay, parseKeyHex } from '../ble/ble-client.js';
 import { writeVCardOverBle } from '../ble/nfc-write.js';
@@ -85,6 +86,8 @@ for (const id of [
   'btn-toggle-key',
   'remember-key-warning',
   'badge-canvas',
+  'badge-preview',
+  'canvas-frame',
   'btn-connect',
   'btn-disconnect',
   'btn-send',
@@ -295,14 +298,37 @@ async function rerender() {
       markEdge,
     });
     el['preview-example-note'].hidden = !usingExample;
-    el['badge-canvas'].dataset.scale = String(prefs.previewScale);
-    // The canvas keeps its own aspect via CSS; tell it which one to use.
-    el['badge-canvas'].classList.toggle('portrait', portrait);
+    sizePreview();
     applyRotationLabels(portrait ? 'portrait' : 'landscape');
   } catch (error) {
     setStatus(`Render error: ${error.message}`);
   }
 }
+
+/**
+ * Size the preview canvas at the chosen scale, or the largest pixel-perfect
+ * scale that fits the preview panel (see preview-scale.js).
+ * @returns {void}
+ */
+function sizePreview() {
+  const canvas = el['badge-canvas'];
+  const panel = el['badge-preview'];
+  const frame = el['canvas-frame'];
+  const panelStyle = getComputedStyle(panel);
+  const frameStyle = getComputedStyle(frame);
+  const available =
+    panel.clientWidth -
+    parseFloat(panelStyle.paddingLeft) -
+    parseFloat(panelStyle.paddingRight) -
+    (frame.offsetWidth - frame.clientWidth) -
+    parseFloat(frameStyle.paddingLeft) -
+    parseFloat(frameStyle.paddingRight);
+  const scale = fitPreviewScale(prefs.previewScale, canvas.width, available, window.devicePixelRatio);
+  canvas.style.width = `${canvas.width * scale}px`;
+  canvas.style.height = `${canvas.height * scale}px`;
+}
+
+window.addEventListener('resize', debounce(sizePreview, 100));
 
 const debouncedRerender = debounce(() => {
   rerender();
