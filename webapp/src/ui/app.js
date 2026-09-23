@@ -36,6 +36,8 @@ import { fitPreviewScale } from '../pure/preview-scale.js';
 import { antennaEdge } from '../pure/nfc-placement.js';
 import { isWebBluetoothSupported, createBleClient, connectAndAuthenticate, disconnectBleClient, sendBadgeToDisplay, parseKeyHex } from '../ble/ble-client.js';
 import { writeVCardOverBle } from '../ble/nfc-write.js';
+import { parseDeviceQr } from '../pure/device-qr.js';
+import { isCameraScanSupported, scanQrFromCamera, scanQrFromImage } from '../scan/qr-scanner.js';
 
 /** A minimal storage interface wrapping window.localStorage, or an in-memory fallback if it throws on access. */
 function getStorage() {
@@ -113,6 +115,12 @@ for (const id of [
   'btn-device-delete',
   'field-device-name',
   'btn-device-save',
+  'btn-scan-device',
+  'scan-dialog',
+  'scan-video',
+  'scan-status',
+  'field-scan-image',
+  'btn-scan-image',
   'preview-example-note',
   'status-line',
 ]) {
@@ -880,3 +888,124 @@ el['btn-device-delete'].addEventListener('click', () => {
 });
 
 renderDeviceList(loadDevices(storage));
+
+
+// --- Device QR scan -------------------------------------------------------------
+
+/**
+ * Use a tag's identity from its boot-screen QR code.
+ *
+ * @param {import('../pure/device-qr.js').DeviceQr} device
+ * @returns {void}
+ */
+function applyScannedDevice(device) {
+  prefs = { ...prefs, devicePrefix: device.deviceName };
+  el['field-device-prefix'].value = device.deviceName;
+  if (device.key) {
+    encryptionKeyHex = device.key;
+    el['field-key'].value = device.key;
+    if (prefs.rememberKey) saveStoredKey(storage, device.key);
+  }
+  if (!el['field-device-name'].value.trim()) el['field-device-name'].value = device.deviceName;
+  debouncedSave();
+
+  const found = device.key
+    ? `Found ${device.deviceName} and its key.`
+    : `Found ${device.deviceName}, but its QR code has no key (the tag hides it, or has none). Enter the key if it needs one.`;
+  // Same as picking a saved device: never leave a connection to another tag.
+  if (bleClient) {
+    const previous = bleClient;
+    handleDisconnected(`${found} Disconnected from the previous tag, connect again.`);
+    disconnectBleClient(previous);
+    return;
+  }
+  setStatus(found);
+}
+
+/** Aborts the running camera scan, if any. */
+let scanAbort = null;
+
+el['btn-scan-device'].addEventListener('click', async () => {
+  const cameraOk = isCameraScanSupported();
+  el['scan-video'].hidden = !cameraOk;
+  el['scan-status'].textContent = cameraOk
+    ? 'Starting camera...'
+    : 'The camera needs HTTPS and a supported browser. Use a photo of the QR code instead.';
+  el['scan-dialog'].showModal();
+  if (!cameraOk) return;
+
+  scanAbort = new AbortController();
+  const { signal } = scanAbort;
+  let lastError = '';
+  try {
+    el['scan-status'].textContent = 'Looking for a QR code...';
+    const text = await scanQrFromCamera(
+      el['scan-video'],
+      (candidate) => {
+        const result = parseDeviceQr(candidate);
+        // Keep scanning past other QR codes, but say why they were skipped.
+        if (!result.ok && result.error !== lastError) {
+          lastError = result.error;
+          el['scan-status'].textContent = `${result.error} Still looking...`;
+        }
+        return result.ok;
+      },
+      signal,
+    );
+    if (text === null) return;
+    const result = parseDeviceQr(text);
+    if (result.ok) {
+      el['scan-dialog'].close();
+      applyScannedDevice(result.device);
+    }
+  } catch (error) {
+    if (signal.aborted) return;
+    el['scan-video'].hidden = true;
+    el['scan-status'].textContent =
+      error && error.name === 'NotAllowedError'
+        ? 'Camera access was blocked. Allow it, or use a photo of the QR code instead.'
+        : `Camera unavailable: ${error.message}. Use a photo of the QR code instead.`;
+  }
+});
+
+// Closing the dialog any way (Cancel, Escape, a successful scan) stops the camera.
+el['scan-dialog'].addEventListener('close', () => {
+  if (scanAbort) scanAbort.abort();
+  scanAbort = null;
+});
+
+el['btn-scan-image'].addEventListener('click', () => el['field-scan-image'].click());
+
+el['field-scan-image'].addEventListener('change', async () => {
+  const file = el['field-scan-image'].files && el['field-scan-image'].files[0];
+  el['field-scan-image'].value = '';
+  if (!file) return;
+  el['scan-status'].textContent = 'Reading photo...';
+  try {
+    const text = await scanQrFromImage(file);
+    if (text === null) {
+      el['scan-status'].textContent = 'No QR code found in that photo. Try a closer, sharper one.';
+      return;
+    }
+    const result = parseDeviceQr(text);
+    if (!result.ok) {
+      el['scan-status'].textContent = result.error;
+      return;
+    }
+    el['scan-dialog'].close();
+    applyScannedDevice(result.device);
+  } catch (error) {
+    el['scan-status'].textContent = `Could not read that photo: ${error.message}`;
+  }
+});
+
+// A phone's own camera app turns the QR code into a link. Pasting that link
+// into the key field does the same as scanning it here.
+el['field-key'].addEventListener('paste', (event) => {
+  const text = event.clipboardData ? event.clipboardData.getData('text') : '';
+  if (!/opendisplay\.org/i.test(text)) return;
+  const result = parseDeviceQr(text);
+  if (!result.ok) return;
+  event.preventDefault();
+  applyScannedDevice(result.device);
+});
