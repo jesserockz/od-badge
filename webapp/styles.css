@@ -74,9 +74,36 @@ body {
   align-items: start;
 }
 
+/* Grid and flex items default to min-width: auto, so without these a wide
+   preview canvas stretches the whole layout past a phone's screen instead of
+   letting the canvas frame scroll. */
+.layout > * {
+  min-width: 0;
+}
+
 @media (max-width: 860px) {
   .layout {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* On a single column, show the badge before the long form so edits are
+     visible without scrolling past every field first. */
+  .preview {
+    order: -1;
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 12px;
+  }
+
+  .panel {
+    padding: 12px;
+  }
+
+  fieldset {
+    padding: 10px;
   }
 }
 
@@ -171,22 +198,17 @@ input[type='file'] {
 }
 
 #badge-canvas {
-  /* Pixel-perfect only. The canvas is 384x168 (or 168x384 in portrait) and is
-     shown at exactly 1x or 2x, never a fractional factor: with
-     image-rendering: pixelated, a fractional scale renders some source pixels
-     one device pixel wide and others two, so the preview stops matching what
-     the panel will actually show. No max-width here on purpose; the frame
-     scrolls instead of shrinking the canvas to a fractional size. */
-  width: 768px;
-  height: 336px;
+  /* Pixel-perfect only. The canvas is 384x168 (or 168x384 in portrait) and
+     app.js sizes it so every source pixel covers a whole number of device
+     pixels: the chosen 1x or 2x, or on a narrow screen the largest whole
+     device-pixel factor that fits. With image-rendering: pixelated, a
+     fractional scale renders some source pixels one device pixel wide and
+     others two, so the preview stops matching what the panel will actually
+     show. No max-width here on purpose; the frame scrolls instead of
+     shrinking the canvas to a fractional size. */
   image-rendering: pixelated;
   display: block;
   flex: none;
-}
-
-#badge-canvas[data-scale='1'] {
-  width: 384px;
-  height: 168px;
 }
 
 .actions {
@@ -227,18 +249,6 @@ progress {
   text-align: center;
 }
 
-
-/* Portrait preview: the panel's native 168x384. Narrower, so cap the width
-   rather than letting it stretch to the landscape width. */
-#badge-canvas.portrait {
-  width: 336px;
-  height: 768px;
-}
-
-#badge-canvas.portrait[data-scale='1'] {
-  width: 168px;
-  height: 384px;
-}
 
 
 /* A text field with a button sitting inside its right edge (the key reveal
