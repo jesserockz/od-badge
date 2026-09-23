@@ -17,6 +17,8 @@ export const VCARD_LINE_ENDING = '\r\n';
 export const DEFAULT_CONTACT_NAME = '';
 
 /** @type {string} */
+// No personal details are baked in: the contact fields start empty and
+// whatever the user types stays in their own browser.
 export const DEFAULT_CONTACT_EMAIL = '';
 
 /**

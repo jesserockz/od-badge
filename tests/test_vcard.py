@@ -12,7 +12,7 @@ from od_badge.vcard import (
 
 
 def test_split_name_family_and_given() -> None:
-    assert split_name("Jane Doe") == ("Hills", "Jane")
+    assert split_name("Jane Doe") == ("Doe", "Jane")
 
 
 def test_split_name_multiple_given_names() -> None:

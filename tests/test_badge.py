@@ -135,8 +135,12 @@ def test_rotate_to_panel_rejects_unexpected_result_size() -> None:
         rotate_to_panel(square, "cw")
 
 
-def test_default_handle_constant() -> None:
-    assert DEFAULT_HANDLE == "@janedoe"
+def test_no_personal_details_are_baked_in() -> None:
+    """Every content field starts empty: the tool assumes nothing about anyone."""
+    content = BadgeContent()
+    assert content.handle == ""
+    assert content.name == ""
+    assert content.qr_url == ""
 
 
 # Allowed text colours per background, on the BWRY panel. Red on black and
@@ -267,3 +271,15 @@ def test_reserved_strip_keeps_the_mark_clear_of_content(mark_edge: str) -> None:
         text_x = int(text["x"])
         if mark_edge == "left":
             assert text_x >= mark_right, f"{text['value']!r} runs into the tap mark"
+
+
+async def test_renders_with_every_field_empty() -> None:
+    """The very first load has nothing filled in, and must still render.
+
+    An empty handle previously produced a negative-width rule, which PIL
+    rejects outright.
+    """
+    image = await render_badge(BadgeContent())
+    assert image.size == (CANVAS_WIDTH, CANVAS_HEIGHT)
+    colours = {colour for _, colour in image.getcolors(maxcolors=1 << 20)}
+    assert colours <= {(0, 0, 0), (255, 255, 255), (255, 0, 0), (255, 255, 0)}

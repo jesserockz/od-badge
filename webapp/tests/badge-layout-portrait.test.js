@@ -30,7 +30,7 @@ const measure = (text, size) => text.length * size * 0.58;
 const measureByFont = (text, size) => measure(text, size);
 
 const content = {
-  handle: '',
+  handle: '@janedoe',
   wordmark: 'ESPHOME',
   domain: 'esphome.io',
 };

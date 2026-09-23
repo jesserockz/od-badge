@@ -347,13 +347,15 @@ export async function renderBadgePortrait(canvas, { content, logoUrl, markEdge =
   ctx.font = `${layout.heroSize}px "${FONT_PPB}"`;
   ctx.fillText(content.handle, PORTRAIT_CENTER_X, PORTRAIT_HERO_Y);
 
-  ctx.fillStyle = inkFor('hero');
-  ctx.fillRect(
-    layout.underlineXStart,
-    PORTRAIT_UNDERLINE_Y_START,
-    layout.underlineXEnd - layout.underlineXStart,
-    PORTRAIT_UNDERLINE_Y_END - PORTRAIT_UNDERLINE_Y_START,
-  );
+  if (content.handle.trim()) {
+    ctx.fillStyle = inkFor('hero');
+    ctx.fillRect(
+      layout.underlineXStart,
+      PORTRAIT_UNDERLINE_Y_START,
+      Math.max(0, layout.underlineXEnd - layout.underlineXStart),
+      PORTRAIT_UNDERLINE_Y_END - PORTRAIT_UNDERLINE_Y_START,
+    );
+  }
 
   ctx.fillStyle = inkFor('name');
   ctx.font = `${PORTRAIT_NAME_FONT_SIZE}px "${FONT_PPB}"`;

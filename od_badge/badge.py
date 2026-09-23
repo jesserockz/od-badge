@@ -25,6 +25,8 @@ ANTENNA_BADGE_Y = 84
 from od_badge.palette import RED as RED_RGB
 from od_badge.palette import YELLOW as YELLOW_RGB
 
+#: Nothing about a person is assumed: every content field starts empty and
+#: is supplied by the caller. The UI shows examples as placeholders only.
 CANVAS_WIDTH = 384
 CANVAS_HEIGHT = 168
 
@@ -203,15 +205,17 @@ def build_elements(
             "color": "black",
             "anchor": "lm",
         },
-        # name
+        # Rule under the hero. Hidden when there is no handle: a zero-width
+        # rule would be a negative-width rectangle, which PIL rejects.
         {
             "type": "rectangle",
             "x_start": content_x,
             "y_start": UNDERLINE_Y_START,
-            "x_end": content_x + text_width(content.handle, "ppb", hero_size) - 6,
+            "x_end": max(content_x, content_x + text_width(content.handle, "ppb", hero_size) - 6),
             "y_end": UNDERLINE_Y_END,
             "fill": "black",
             "outline": "black",
+            "visible": bool(content.handle.strip()),
         },
         {
             "type": "text",

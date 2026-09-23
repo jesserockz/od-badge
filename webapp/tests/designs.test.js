@@ -23,10 +23,10 @@ function fakeStorage(initial = {}) {
 
 const PREFS = {
   project: 'esphome',
-  handle: '',
-  name: '',
-  qrUrl: '',
-  contactEmail: '',
+  handle: '@janedoe',
+  name: 'JANE',
+  qrUrl: 'https://github.com/janedoe',
+  contactEmail: 'jane@example.com',
   devicePrefix: 'ODD8',
   rememberKey: true,
   orientation: 'landscape',

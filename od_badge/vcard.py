@@ -16,6 +16,8 @@ VCARD_MIME_TYPE = "text/vcard"
 VCARD_LINE_ENDING = "\r\n"
 
 DEFAULT_CONTACT_NAME = ""
+#: No personal details are baked in. The contact card is filled from
+#: --contact-name / --contact-email, or left out of the vCard entirely.
 DEFAULT_CONTACT_EMAIL = ""
 
 

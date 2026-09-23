@@ -54,7 +54,7 @@ def test_build_parser_render_defaults() -> None:
     assert args.command == "render"
     assert args.out == "badge.png"
     assert args.scale == 1
-    assert args.handle == "@janedoe"
+    assert args.handle == ""
 
 
 def test_build_parser_push_defaults() -> None:

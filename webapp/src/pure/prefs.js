@@ -37,7 +37,7 @@ export const DEFAULT_PREFS = Object.freeze({
   name: '',
   qrUrl: '',
   contactName: '',
-  contactEmail: 'jane@example.com',
+  contactEmail: '',
   orientation: 'landscape',
   previewScale: 2,
   rotation: 'ccw',

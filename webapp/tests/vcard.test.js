@@ -69,10 +69,13 @@ test('buildVCard escapes special characters in name and nickname', () => {
   assert.ok(card.includes('NICKNAME:a\\\\b'));
 });
 
-test('buildVCard defaults name/email when not provided', () => {
+test('buildVCard assumes nothing when given nothing', () => {
+  // No personal details are baked in anywhere, so an empty contact produces a
+  // card with no name, email or URL rather than someone's real details.
   const card = buildVCard({});
-  assert.ok(card.includes('FN:Jane'));
-  assert.ok(card.includes('EMAIL;TYPE=INTERNET:jane@example.com'));
+  assert.equal(card, 'BEGIN:VCARD\r\nVERSION:3.0\r\nN:;;;;\r\nFN:\r\nEND:VCARD\r\n');
+  assert.equal(card.includes('EMAIL'), false);
+  assert.equal(card.includes('URL'), false);
 });
 
 test('buildVCard matches od_badge.vcard.build_vcard byte-for-byte for the same inputs', () => {
@@ -80,7 +83,12 @@ test('buildVCard matches od_badge.vcard.build_vcard byte-for-byte for the same i
   //   uv run python -c "from od_badge.vcard import *; print(repr(build_vcard(
   //       VCardContact(url='https://github.com/janedoe', nickname='janedoe'))))"
   const pythonReference =
-    'BEGIN:VCARD\r\nVERSION:3.0\r\nN:;Jane;;;\r\nFN:Jane\r\nNICKNAME:janedoe\r\nEMAIL;TYPE=INTERNET:jane@example.com\r\nURL:https://github.com/janedoe\r\nEND:VCARD\r\n';
-  const card = buildVCard({ url: 'https://github.com/janedoe', nickname: 'janedoe' });
+    'BEGIN:VCARD\r\nVERSION:3.0\r\nN:Doe;Jane;;;\r\nFN:Jane Doe\r\nNICKNAME:janedoe\r\nEMAIL;TYPE=INTERNET:jane@example.com\r\nURL:https://github.com/janedoe\r\nEND:VCARD\r\n';
+  const card = buildVCard({
+    name: 'Jane Doe',
+    email: 'jane@example.com',
+    url: 'https://github.com/janedoe',
+    nickname: 'janedoe',
+  });
   assert.equal(card, pythonReference);
 });
