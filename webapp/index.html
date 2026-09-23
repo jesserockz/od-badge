@@ -65,6 +65,29 @@
 
     <fieldset>
       <legend>Device</legend>
+      </fieldset>
+
+      <fieldset>
+        <legend>Saved designs</legend>
+        <label for="field-design-name">Save current design as</label>
+        <div class="input-with-action">
+          <input id="field-design-name" type="text" maxlength="60" placeholder="e.g. Conference 2026" />
+        </div>
+        <div class="actions actions-inline">
+          <button id="btn-design-save" type="button">Save</button>
+        </div>
+
+        <label for="field-design-list">Saved designs</label>
+        <select id="field-design-list"></select>
+        <div class="actions actions-inline">
+          <button id="btn-design-load" type="button">Load</button>
+          <button id="btn-design-delete" type="button">Delete</button>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Device</legend>
+
       <label for="field-scale">Preview scale</label>
       <select id="field-scale">
         <option value="2">2x (default)</option>
@@ -121,6 +144,34 @@
     </fieldset>
   </form>
 
+    <dialog id="share-dialog">
+      <form method="dialog" id="share-form">
+        <h2>Share this badge</h2>
+        <p class="dialog-note">
+          The link carries the badge design. Choose what else to include.
+        </p>
+        <label class="checkbox-row">
+          <input id="field-share-contact" type="checkbox" />
+          Include contact details (name and email on the NFC card)
+        </label>
+        <label class="checkbox-row">
+          <input id="field-share-device" type="checkbox" />
+          Include the device name prefix
+        </label>
+        <p class="dialog-note">
+          The encryption key is never put in a link. Use "Download config" if
+          you want a file that includes it.
+        </p>
+        <label for="field-share-url">Link</label>
+        <textarea id="field-share-url" rows="4" readonly></textarea>
+        <p id="share-size" class="dialog-note"></p>
+        <div class="actions">
+          <button id="btn-share-copy" type="button">Copy link</button>
+          <button value="close">Close</button>
+        </div>
+      </form>
+    </dialog>
+
   <section class="panel preview">
     <div class="canvas-frame">
       <canvas id="badge-canvas" width="384" height="168"></canvas>
@@ -132,6 +183,10 @@
       <button id="btn-send" type="button" disabled>Send to display</button>
       <button id="btn-nfc" type="button" disabled>Write NFC contact</button>
       <button id="btn-download" type="button">Download PNG</button>
+      <button id="btn-share" type="button">Share link</button>
+      <button id="btn-export" type="button">Download config</button>
+      <button id="btn-import" type="button">Load config</button>
+      <input id="field-import-file" type="file" accept="application/json,.json" hidden />
     </div>
 
     <div id="progress-wrap" class="progress-wrap" hidden>

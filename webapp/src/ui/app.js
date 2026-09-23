@@ -8,6 +8,15 @@ import { computeDitherIndices, wireMapFor } from '../pure/palette.js';
 import { PROJECTS, resolveBrand } from '../pure/brands.js';
 import { loadPrefs, savePrefs, loadStoredKey, saveStoredKey, clearStoredKey } from '../pure/prefs.js';
 import {
+  buildConfig,
+  buildShareUrl,
+  configToPrefs,
+  decodeConfig,
+  shareStringFromHash,
+  SHARE_URL_SOFT_LIMIT,
+} from '../pure/config-share.js';
+import { deleteDesign, findDesign, loadDesigns, saveDesign } from '../pure/designs.js';
+import {
   renderBadge,
   renderBadgePortrait,
   prepareForPanel,
@@ -72,6 +81,21 @@ for (const id of [
   'btn-download',
   'progress-wrap',
   'progress-bar',
+  'btn-share',
+  'btn-export',
+  'btn-import',
+  'field-import-file',
+  'share-dialog',
+  'field-share-contact',
+  'field-share-device',
+  'field-share-url',
+  'share-size',
+  'btn-share-copy',
+  'field-design-name',
+  'field-design-list',
+  'btn-design-save',
+  'btn-design-load',
+  'btn-design-delete',
   'status-line',
 ]) {
   el[id] = document.getElementById(id);
@@ -513,3 +537,197 @@ async function start() {
 }
 
 start();
+
+
+// --- Share, export/import, saved designs ---------------------------------------
+
+/**
+ * Apply a partial preferences object from a config, then redraw.
+ *
+ * @param {Record<string, any>} incoming
+ * @returns {void}
+ */
+function applyIncomingPrefs(incoming) {
+  prefs = { ...prefs, ...incoming };
+  applyPrefsToForm();
+  debouncedSave();
+  rerender();
+}
+
+/** Rebuild the share link from the dialog's current checkboxes. */
+function refreshShareUrl() {
+  const config = buildConfig(
+    prefs,
+    {
+      includeContact: el['field-share-contact'].checked,
+      includeDevice: el['field-share-device'].checked,
+      forShare: true,
+    },
+  );
+  const url = buildShareUrl(window.location.href, config);
+  el['field-share-url'].value = url;
+  const overLimit = url.length > SHARE_URL_SOFT_LIMIT;
+  el['share-size'].textContent = overLimit
+    ? `${url.length} characters. That is long enough that some apps may cut it short.`
+    : `${url.length} characters.`;
+}
+
+el['btn-share'].addEventListener('click', () => {
+  // Ask every time rather than remembering: what is safe to share depends on
+  // who is being sent the link.
+  el['field-share-contact'].checked = false;
+  el['field-share-device'].checked = false;
+  refreshShareUrl();
+  el['share-dialog'].showModal();
+});
+
+el['field-share-contact'].addEventListener('change', refreshShareUrl);
+el['field-share-device'].addEventListener('change', refreshShareUrl);
+
+el['btn-share-copy'].addEventListener('click', async () => {
+  const url = el['field-share-url'].value;
+  try {
+    await navigator.clipboard.writeText(url);
+    el['share-size'].textContent = 'Link copied.';
+  } catch {
+    // Clipboard access can be refused; selecting the text still lets the user copy it.
+    el['field-share-url'].select();
+    el['share-size'].textContent = 'Could not copy automatically. The link is selected, copy it manually.';
+  }
+});
+
+el['btn-export'].addEventListener('click', () => {
+  // A downloaded file is under the user's control, so it may carry the device
+  // settings and key that a shareable link must never include.
+  const config = buildConfig(
+    prefs,
+    { includeContact: true, includeDevice: true, includeKey: true },
+    encryptionKeyHex,
+  );
+  const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'od-badge-config.json';
+  link.click();
+  URL.revokeObjectURL(link.href);
+  setStatus(
+    encryptionKeyHex
+      ? 'Downloaded od-badge-config.json. It contains your encryption key, keep it private.'
+      : 'Downloaded od-badge-config.json.',
+  );
+});
+
+el['btn-import'].addEventListener('click', () => el['field-import-file'].click());
+
+el['field-import-file'].addEventListener('change', async () => {
+  const file = el['field-import-file'].files && el['field-import-file'].files[0];
+  if (!file) return;
+  try {
+    const config = JSON.parse(await file.text());
+    const { prefs: incoming, key } = configToPrefs(config);
+    applyIncomingPrefs(incoming);
+    if (key) {
+      encryptionKeyHex = key;
+      el['field-key'].value = key;
+      if (prefs.rememberKey) saveStoredKey(storage, key);
+    }
+    setStatus(`Loaded ${file.name}${key ? ' (including the encryption key)' : ''}.`);
+  } catch (error) {
+    setStatus(`Could not load that config: ${error.message}`);
+  } finally {
+    // Clear it so selecting the same file again still fires a change event.
+    el['field-import-file'].value = '';
+  }
+});
+
+/**
+ * Repopulate the saved-designs dropdown.
+ *
+ * @param {import('../pure/designs.js').SavedDesign[]} designs
+ * @returns {void}
+ */
+function renderDesignList(designs) {
+  const select = el['field-design-list'];
+  const previous = select.value;
+  select.innerHTML = '';
+  if (designs.length === 0) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = '(none saved yet)';
+    select.appendChild(option);
+    select.disabled = true;
+    el['btn-design-load'].disabled = true;
+    el['btn-design-delete'].disabled = true;
+    return;
+  }
+  select.disabled = false;
+  el['btn-design-load'].disabled = false;
+  el['btn-design-delete'].disabled = false;
+  for (const design of designs) {
+    const option = document.createElement('option');
+    option.value = design.name;
+    option.textContent = design.name;
+    select.appendChild(option);
+  }
+  if (designs.some((design) => design.name === previous)) select.value = previous;
+}
+
+el['btn-design-save'].addEventListener('click', () => {
+  const result = saveDesign(storage, el['field-design-name'].value, prefs);
+  renderDesignList(result.designs);
+  if (!result.ok) {
+    setStatus(result.error);
+    return;
+  }
+  el['field-design-list'].value = el['field-design-name'].value.trim();
+  setStatus(`Saved design "${el['field-design-name'].value.trim()}".`);
+});
+
+el['btn-design-load'].addEventListener('click', () => {
+  const name = el['field-design-list'].value;
+  const design = findDesign(storage, name);
+  if (!design) {
+    setStatus('That design is no longer saved.');
+    renderDesignList(loadDesigns(storage));
+    return;
+  }
+  applyIncomingPrefs(design.values);
+  el['field-design-name'].value = design.name;
+  setStatus(`Loaded design "${design.name}".`);
+});
+
+el['btn-design-delete'].addEventListener('click', () => {
+  const name = el['field-design-list'].value;
+  if (!name) return;
+  renderDesignList(deleteDesign(storage, name));
+  setStatus(`Deleted design "${name}".`);
+});
+
+renderDesignList(loadDesigns(storage));
+
+/**
+ * Load a badge design from a share link, then clear the fragment so a later
+ * refresh does not silently undo edits made since.
+ *
+ * @param {string} hash
+ * @returns {void}
+ */
+function applyShareLink(hash) {
+  const encoded = shareStringFromHash(hash);
+  if (!encoded) return;
+  try {
+    const { prefs: incoming } = configToPrefs(decodeConfig(encoded));
+    applyIncomingPrefs(incoming);
+    setStatus('Loaded a badge design from the link.');
+  } catch (error) {
+    setStatus(error.message);
+  }
+  history.replaceState(null, '', window.location.pathname + window.location.search);
+}
+
+applyShareLink(window.location.hash);
+
+// Pasting a share link into the address bar while the app is already open is
+// a same-document navigation: the page does not reload, so without this the
+// link would appear to do nothing.
+window.addEventListener('hashchange', () => applyShareLink(window.location.hash));
