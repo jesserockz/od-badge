@@ -47,7 +47,7 @@ def test_build_vcard_full_contact() -> None:
         )
     )
     assert card.startswith("BEGIN:VCARD\r\nVERSION:3.0\r\n")
-    assert "N:Hills;Jane;;;" in card
+    assert "N:Doe;Jane;;;" in card
     assert "FN:Jane Doe" in card
     assert "NICKNAME:janedoe" in card
     assert "EMAIL;TYPE=INTERNET:jane@example.com" in card

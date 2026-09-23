@@ -72,3 +72,12 @@ tap mark follows it. The edge is derived from the rotation transform rather
 than tabulated, and a test reproduces the mapping.
 
 **`ble-common.js` is linked, not vendored.** See `webapp/vendor/README.md`.
+
+## Licence
+
+Apache License 2.0, see `LICENSE`.
+
+The third-party libraries under `webapp/vendor/` keep their own licences (pako
+is MIT AND Zlib, qrcodejs is MIT). `ble-common.js` is not redistributed here at
+all: it is loaded from opendisplay.org, which declares no licence. See
+`webapp/vendor/README.md`.

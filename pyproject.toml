@@ -1,8 +1,10 @@
 [project]
 name = "od-badge"
 version = "0.1.0"
-description = "Render and upload an ESPHome conference badge to an OpenDisplay e-paper tag"
+description = "Design and upload a conference name badge to an OpenDisplay BWRY e-paper tag"
 readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 requires-python = ">=3.13"
 dependencies = [
     "odl-renderer>=0.5.12",
@@ -22,9 +24,6 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["od_badge"]
-
-[tool.hatch.build.targets.wheel.force-include]
-"od_badge/assets" = "od_badge/assets"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

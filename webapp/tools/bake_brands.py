@@ -33,6 +33,7 @@ import re
 import subprocess
 import tempfile
 from dataclasses import dataclass
+import os
 from pathlib import Path
 from typing import Callable
 
@@ -167,25 +168,57 @@ class Brand:
     build: Callable[[], Image.Image]
 
 
+def source_path(env_var: str, hint: str) -> Path:
+    """Locate a brand logo checked out somewhere on this machine.
+
+    These logos are not redistributed with this repository: they are read from
+    the upstream projects' own checkouts. Point the matching environment
+    variable at the file, for example:
+
+        HOME_ASSISTANT_LOGO_SVG=~/src/home-assistant.io/.../logo.svg
+
+    Args:
+        env_var: Environment variable holding the full path.
+        hint: Where the file usually lives inside the upstream checkout.
+
+    Raises:
+        SystemExit: If the variable is unset or does not point at a file.
+    """
+    raw = os.environ.get(env_var)
+    if not raw:
+        raise SystemExit(f"Set {env_var} to the path of {hint}")
+    path = Path(raw).expanduser()
+    if not path.is_file():
+        raise SystemExit(f"{env_var} does not point at a file: {path}")
+    return path
+
+
 def build_esphome() -> Image.Image:
     svg_path = REPO_ROOT / "od_badge" / "assets" / "logo.svg"
     return bake_svg_mark(svg_path, body_target="#FFFFFF", glyph_target="#000000")
 
 
 def build_home_assistant() -> Image.Image:
-    svg_path = Path("/path/to/home-assistant/home-assistant.io/source/images/home-assistant-logo.svg")
+    svg_path = source_path(
+        "HOME_ASSISTANT_LOGO_SVG",
+        "home-assistant.io/source/images/home-assistant-logo.svg",
+    )
     # Full wordmark viewBox is "0 0 1705 241"; the icon is the leading square.
     return bake_svg_mark(svg_path, body_target="#FFFFFF", glyph_target="#000000", viewbox="0 0 241 241")
 
 
 def build_music_assistant() -> Image.Image:
-    png_path = Path("/path/to/music-assistant/server/music_assistant/logo.png")
+    png_path = source_path(
+        "MUSIC_ASSISTANT_LOGO_PNG",
+        "music-assistant/server/music_assistant/logo.png",
+    )
     return bake_raster_mark(png_path, bg_target=(0, 0, 0), fg_target=(255, 255, 255))
 
 
 def build_open_home_foundation() -> Image.Image:
-    svg_path = Path(
-        "/path/to/home-assistant/home-assistant.io/source/images/collaboration/open-home-foundation.svg"
+    svg_path = source_path(
+        "OPEN_HOME_FOUNDATION_LOGO_SVG",
+        "home-assistant.io/source/images/collaboration/open-home-foundation.svg",
     )
     # Original viewBox is "0 0 81 18" (icon + two-line wordmark). The icon
     # itself (two stacked bracket/roof shapes) is bounded within roughly
